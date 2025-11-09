@@ -40,7 +40,7 @@ print("Recall: %.3f" % recall)
 print("F1 Score: %.3f" % f1)
 
 """
-Human vs ML Model 
+Human vs ML Model
 
 """
 def adjustBoard(board_2d): 
@@ -157,12 +157,9 @@ class Game:
     def human_move(self):
         while True:
             # print the board each time to show current state
-            self.board.printBoard()
-            print(f"\n{self.turn}'s turn.")
-            print(f"Where do you want your {self.turn} placed? ")
 
             try:
-                entry = input("Please enter row number and column number separated by a comma.\n").split(",")
+                entry = input("Where do you want your X placed?\n").split(",")
                 row = int(entry[0])
                 col = int(entry[1])
             except Exception:
