@@ -1,8 +1,5 @@
 """
-Tic-Tac-Toe
-
-This program is a simple Tic-Tac-Toe game using classes and objects.
-    
+JJ Project 2 - Part A - Classes and Objects
     
 """
 

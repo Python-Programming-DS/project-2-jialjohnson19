@@ -1,0 +1,224 @@
+''' 
+JJ Project 2 - Part C - ML Model 
+
+'''
+import numpy as np 
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import random
+single = pd.read_csv("tictac_single.txt", delim_whitespace =True, header=None)
+print(single.head())
+
+# endgame = pd.read_csv("tictac_final.txt", delim_whitespace=True, header=None)
+# print(endgame.head())
+
+X = single.iloc[:,:-1]
+y= single.iloc[:,-1]
+print(X.shape)
+print(y.shape)
+
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.2, random_state = 0)
+print(X_train.shape, X_test.shape)
+
+rfc = RandomForestClassifier(random_state=0)
+rfc.fit(X_train, y_train)
+y_pred = rfc.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='macro', zero_division=0)
+recall = recall_score(y_test, y_pred, average='macro', zero_division=0)
+f1 = f1_score(y_test, y_pred, average='macro', zero_division=0)
+
+
+#display accuracy, precision, recall and f1-score
+print("Accuracy: %.3f" % accuracy)
+print("Precision: %.3f" % precision)
+print("Recall: %.3f" % recall)
+print("F1 Score: %.3f" % f1)
+
+"""
+Human vs ML Model 
+
+"""
+def adjustBoard(board_2d): 
+    #changes board from 3x3 to 1x9 
+    mapping = {"X": 1, "O": -1, " ": 0}
+    flattened = [] 
+    for r in range(3): 
+        for c in range(3): 
+            flattened.append(mapping[board_2d[r][c]])
+    return np.array(flattened, dtype=int).reshape(1,-1)
+
+class Board: 
+    def __init__(self): 
+        #3x3 2d list of strings 
+
+        #print new board 
+        self.c = [[" "," "," "],
+                  [" "," "," "],
+                  [" "," "," "]]
+        
+    def printBoard(self):
+        # it first prints the BOARD_HEADER constant
+        # BOARD_HEADER constant
+        BOARD_HEADER = "-----------------\n|R\\C| 0 | 1 | 2 |\n-----------------"
+        print(BOARD_HEADER)
+
+        # using a for-loop, it increments through the rows
+        for i in range(3):
+            print(f"| {i} | {self.c[i][0]} | {self.c[i][1]} | {self.c[i][2]} |")
+            print("-----------------")
+
+class Game: 
+    def __init__(self): 
+        #initalizes game board and starts with player X 
+        self.board = Board() 
+        self.turn = 'X'
+
+    def switchPlayer(self): 
+        # starts with player x and switches to 0 
+        if self.turn == "X":
+            self.turn ="O"
+        else: 
+            self.turn = "X"
+    
+    def validateEntry(self, row, col): 
+        print(f"You have entered row #{row}\n\t and column #{col}")
+
+        if row not in (0, 1, 2) or col not in (0, 1, 2):
+            print("Invalid entry: try again.\nRow & column numbers must be either 0, 1, or 2.")
+            return False
+        if self.board.c[row][col] != " ":
+            print("That cell is already taken. \nPlease make another selection.")
+            return False
+        else: 
+            print("Thank you for your selection.") 
+            return True 
+        
+    def checkFull(self): 
+    # returns True if the board is full, otherwise False
+        for row in self.board.c:
+            for col in row:  
+                if col == " ":  # found an empty space
+                    return False
+        
+        print("DRAW! NOBODY WINS!")
+        return True
+    
+    def checkWin(self): 
+        #rows
+        b = self.board.c 
+        t = self.turn 
+
+        for r in range(3):
+            if b[r][0] == b[r][1] == b[r][2] == t:
+                print(f"{t} IS THE WINNER!!!")
+                return True
+
+        # check columns
+        for c in range(3):
+            if b[0][c] == b[1][c] == b[2][c] == t:
+                print(f"{t} IS THE WINNER!!!")
+                return True
+
+        # check diagonals
+        if (b[0][0] == b[1][1] == b[2][2] == t) or (b[0][2] == b[1][1] == b[2][0] == t):
+            print(f"{t} IS THE WINNER!!!")
+            return True
+
+        return False
+    
+    def checkEnd(self): 
+        #returns True if game is over, otherwise False
+        if self.checkWin() or self.checkFull():
+            return True
+        else: 
+            return False
+    
+    def ML_move(self):
+        features = adjustBoard(self.board.c)           
+
+        #finds where O should move  
+        predict_index = int(rfc.predict(features)[0])   #rf model predicts best move in integer 
+        r, c = divmod(predict_index, 3)
+
+        if self.board.c[r][c] == " ": #check cell is free 
+            return (r, c)
+
+        for rr in range(3):
+            for cc in range(3):
+                if self.board.c[rr][cc] == " ":
+                    return (rr, cc)
+        return None  # draw 
+    
+    def human_move(self):
+        while True:
+            # print the board each time to show current state
+            self.board.printBoard()
+            print(f"\n{self.turn}'s turn.")
+            print(f"Where do you want your {self.turn} placed? ")
+
+            try:
+                entry = input("Please enter row number and column number separated by a comma.\n").split(",")
+                row = int(entry[0])
+                col = int(entry[1])
+            except Exception:
+                print("Invalid entry: try again.\nRow & column numbers must be either 0, 1, or 2.")
+                continue
+
+            isValid = self.validateEntry(row, col)
+            if not isValid:
+                continue  # re-ask for input if invalid
+
+            # valid move → return it to playGame
+            return (row, col)
+            
+    def playGame(self): 
+        self.board = Board()
+        self.turn = "X"
+        print(f"New game:{self.turn} goes first.\n")      
+
+        while True: 
+            self.board.printBoard() 
+            print(f"\n{self.turn}'s turn.")
+            
+            if self.turn == "O":
+                move = self.ML_move()          # ML is O 
+            else:
+                move = self.human_move() # human is X 
+
+            if move == None: 
+                #no best moves -> tie 
+                self.board.printBoard() 
+                print("DRAW! NOBODY WINS!")
+                break 
+                
+            r, c = move
+            self.board.c[r][c] = self.turn
+            print(f"Model (O) placed {self.turn} at ({r}, {c}).")
+
+            if self.checkEnd():
+                self.board.printBoard()
+                break
+
+            self.switchPlayer()
+                
+
+def main():
+    again = "y"
+
+    while again.lower() == "y": 
+            game = Game() 
+            game.playGame()
+            again = input("\nAnother game? Enter Y or y for yes.\n")
+            
+            
+    print("Thank you for playing!")
+ 
+
+#calls main function 
+if __name__ == "__main__": 
+    main() 

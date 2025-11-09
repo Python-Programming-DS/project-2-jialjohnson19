@@ -1,0 +1,215 @@
+"""
+JJ Project 2 - Part B - MiniMax Algorithm
+"""
+
+class Board: 
+    def __init__(self): 
+        #3x3 2d list of strings 
+
+        #print new board 
+        self.c = [[" "," "," "],
+                  [" "," "," "],
+                  [" "," "," "]]
+        
+    def printBoard(self):
+        # it first prints the BOARD_HEADER constant
+        # BOARD_HEADER constant
+        BOARD_HEADER = "-----------------\n|R\\C| 0 | 1 | 2 |\n-----------------"
+        print(BOARD_HEADER)
+
+        # using a for-loop, it increments through the rows
+        for i in range(3):
+            print(f"| {i} | {self.c[i][0]} | {self.c[i][1]} | {self.c[i][2]} |")
+            print("-----------------")
+
+class Game: 
+    def __init__(self): 
+        #initalizes game board and starts with player X 
+        self.board = Board() 
+        self.turn = 'X'
+
+    def switchPlayer(self): 
+        # starts with player x and switches to 0 
+        if self.turn == "X":
+            self.turn ="O"
+        else: 
+            self.turn = "X"
+    
+    def validateEntry(self, row, col): 
+        print(f"You have entered row #{row}\n\t and column #{col}")
+
+        if row not in (0, 1, 2) or col not in (0, 1, 2):
+            print("Invalid entry: try again.\nRow & column numbers must be either 0, 1, or 2.")
+            return False
+        if self.board.c[row][col] != " ":
+            print("That cell is already taken. \nPlease make another selection.")
+            return False
+        else: 
+            print("Thank you for your selection.") 
+            return True 
+        
+    def checkFull(self): 
+    # returns True if the board is full, otherwise False
+        for row in self.board.c:
+            for col in row:  
+                if col == " ":  # found an empty space
+                    return False
+        
+        print("DRAW! NOBODY WINS!")
+        return True
+    
+    def checkWin(self): 
+        #rows
+        b = self.board.c 
+        t = self.turn 
+
+        for r in range(3):
+            if b[r][0] == b[r][1] == b[r][2] == t:
+                print(f"{t} IS THE WINNER!!!")
+                return True
+
+        # check columns
+        for c in range(3):
+            if b[0][c] == b[1][c] == b[2][c] == t:
+                print(f"{t} IS THE WINNER!!!")
+                return True
+
+        # check diagonals
+        if (b[0][0] == b[1][1] == b[2][2] == t) or (b[0][2] == b[1][1] == b[2][0] == t):
+            print(f"{t} IS THE WINNER!!!")
+            return True
+
+        return False
+    
+    def checkEnd(self): 
+        #returns True if game is over, otherwise False
+        if self.checkWin() or self.checkFull():
+            return True
+        else: 
+            return False
+        
+
+    ''' hasWon, isFull, and findAvailable are helper functions that don't change the real board  '''
+    
+    def hasWon(self, grid, mark): 
+        #check rows and columns 
+        for i in range(3):
+            if grid[i][0] == grid[i][1] == grid[i][2] == mark:
+                return True
+            if grid[0][i] == grid[1][i] == grid[2][i] == mark:
+                return True
+        #check diagonals 
+        if grid[0][0] == grid[1][1] == grid[2][2] == mark:
+            return True
+        if grid[0][2] == grid[1][1] == grid[2][0] == mark:
+            return True
+        return False
+    
+    def isFull(self,grid): 
+        #checks to see if board has any empty spaces 
+        for r in range(3): 
+            for c in range(3): 
+                if grid[r][c] == " ": 
+                    return False 
+        return True
+    
+    def findAvailable(self,grid): 
+        #puts available spaces in list 
+        available_spaces  = [] 
+        for r in range(3): 
+            for c in range(3): 
+                if grid[r][c] == " ": 
+                    available_spaces.append((r, c))
+        return available_spaces 
+    
+    def miniMax(self, board, isMaximizing): 
+        """ returns the optimal move for an AI/computer player given the board 
+        returns optimal next move as tuple(row, col) 
+
+        assume both players play optimally and move should maximize AI chance of winning 
+        or minimize losing if no winning is possible 
+        """
+        if self.hasWon(board, 'X'):
+            return 1, None
+        elif self.hasWon(board, 'O'):
+            return -1, None
+        elif self.isFull(board): 
+            return 0, None 
+        
+        moves = self.findAvailable(board) 
+
+        if isMaximizing: # X play
+            best_score = float("-inf")
+            best_move = None
+            for r, c in moves:
+                board[r][c] = 'X'
+                result = self.miniMax(board, False) 
+                score = result[0]                   
+                board[r][c] = " "
+                if score > best_score:
+                    best_score, best_move = score, (r, c)
+            return best_score, best_move
+        else:
+            best_score = float("inf") # O play 
+            best_move = None
+            for r, c in moves:
+                board[r][c] = 'O'
+                result = self.miniMax(board, True)
+                score = result[0]
+                board[r][c] = " "
+                if score < best_score:
+                    best_score, best_move = score, (r, c)
+            return best_score, best_move
+            
+    def find_best_move(self): 
+        ''' 
+        if opposite player has 2 Os or 2 Xs in a row, then prevent opposite player from winning 
+        otherwise place X or O to increase chance of winning 
+        '''
+        b = [row[:] for row in self.board.c] #copy current board 
+        result = self.miniMax(b, isMaximizing=(self.turn == 'X'))
+        move = result[1]
+        return move
+    
+    def playGame(self): 
+        self.board = Board()
+        self.turn = "X"
+        print(f"New game:{self.turn} goes first.\n")      
+
+        while True: 
+            self.board.printBoard() 
+            print(f"\n{self.turn}'s turn.")
+            
+            move = self.find_best_move() 
+            if move == None: 
+                #no best moves -> tie 
+                self.board.printBoard() 
+                print("DRAW! NOBODY WINS!")
+                break 
+                
+            r, c = move
+            self.board.c[r][c] = self.turn
+            print(f"Computer placed {self.turn} at ({r}, {c}).")
+
+            if self.checkEnd():
+                self.board.printBoard()
+                break
+
+            self.switchPlayer()
+                
+
+def main():
+    again = "y"
+
+    while again.lower() == "y": 
+            game = Game() 
+            game.playGame()
+            again = input("\nAnother game? Enter Y or y for yes.\n")
+            
+            
+    print("Thank you for playing!")
+ 
+
+#calls main function 
+if __name__ == "__main__": 
+    main() 
